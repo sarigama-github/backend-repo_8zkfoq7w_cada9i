@@ -1,48 +1,52 @@
 """
-Database Schemas
+Database Schemas for IZZYY'S BUSINESS
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model maps to a MongoDB collection using the lowercase
+of the class name as the collection name (e.g., Business -> "business").
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 
-# Example schemas (replace with your own):
-
-class User(BaseModel):
+class Business(BaseModel):
     """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
+    Businesses that sign up to place orders.
+    Collection: "business"
     """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    name: str = Field(..., description="Business name")
+    email: str = Field(..., description="Primary contact email")
+    phone: Optional[str] = Field(None, description="Contact phone number")
+    business_type: str = Field(..., description="Type of business (restaurant, school, coffee shop, etc.)")
+    address: str = Field(..., description="Primary address")
+    approved: bool = Field(False, description="Whether the business has been approved to place orders")
 
-class Product(BaseModel):
+class Pastry(BaseModel):
     """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
+    Pastry catalog items available to order.
+    Collection: "pastry"
     """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+    name: str = Field(..., description="Pastry name")
+    description: Optional[str] = Field(None, description="Short description")
+    price: float = Field(..., ge=0, description="Unit price")
+    active: bool = Field(True, description="Whether this pastry is available")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class OrderItem(BaseModel):
+    pastry_id: Optional[str] = Field(None, description="ID of pastry (optional when passing name-only)")
+    name: str = Field(..., description="Pastry name at time of order")
+    quantity: int = Field(..., ge=1, description="Number of units")
+    unit_price: float = Field(..., ge=0, description="Unit price at time of order")
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Order(BaseModel):
+    """
+    Orders placed by approved businesses.
+    Collection: "order"
+    """
+    business_id: str = Field(..., description="ID of the business placing the order")
+    items: List[OrderItem] = Field(..., description="Line items")
+    delivery_date: str = Field(..., description="Delivery date in ISO format (YYYY-MM-DD)")
+    delivery_time: str = Field(..., description="Delivery time in 24h format (HH:MM)")
+    delivery_address: str = Field(..., description="Delivery address")
+    notes: Optional[str] = Field(None, description="Optional notes or instructions")
+    subtotal: float = Field(..., ge=0, description="Items subtotal")
+    delivery_fee: float = Field(0.0, ge=0, description="Optional delivery fee")
+    total: float = Field(..., ge=0, description="Order total amount")
